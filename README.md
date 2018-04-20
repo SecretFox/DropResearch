@@ -1,5 +1,4 @@
 # DropResearch
-Secret World Legends mod for tracking dropped dossiers and lootbox loot
 
 **Donwload**  
 [![alt text](https://i.imgur.com/guClKqN.png "Download")](https://github.com/SecretFox/DropResearch/releases)
@@ -23,8 +22,8 @@ To view data collected by you, you can use `/Option DropResearch_ShowData true` 
 
 **Known Issues**
 * Mission tracking won't work with my other mod, MissionUtils, because it bypasses the missionreport window.
-* Currently way to tell which Weapon/Talisman player gets from the bag found in caches.
-* Better signal for starting upload, bank could be rarely opened,and the lootbox data could inlfate preference files.
+* Currently no way to tell which Weapon/Talisman player got from the bag received from cache.
+* Better signal for starting upload, bank could be rarely opened, and the lootbox data could inlfate preference files.
 * Uploader.as file was not included in the source files, to make sending fake data slightly harder.
 
 
