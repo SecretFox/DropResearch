@@ -90,26 +90,8 @@ class com.fox.DropResearch.Mod {
 		GroupFinder.SignalClientStartedGroupFinderActivity.Disconnect(SlotJoinedGroupFinderBuffer, this);
 	}
 	
-	private function CheckIfCorrectConfig(ComparisonID){
-		if (ComparisonID != string(CharacterBase.GetClientCharID().GetInstance())){
-			if (Debug.GetValue()){
-				// this probably never gets called because debug defaults to false,and this issue only happens when configs have not yet beeen generated
-				UtilsBase.PrintChatText("Mod tried to load configs for wrong character,generating new set of configs.");
-			}
-			var mod:GUIModuleIF = GUIModuleIF.FindModuleIF("DropResearch");
-			var config:Archive = new Archive();
-			DossierHandler.LoadConfig(config);
-			Lootboxes.SetValue(config);
-			ManualSave();
-		}
-	}
-	
 	public function Activate(conf:Archive) {
 		var config:Archive = conf;
-		// Work around for mod loading wrong characters configs.
-		// Everything works fine once the config has been generated for each character once.
-		setTimeout(Delegate.create(this,CheckIfCorrectConfig),1000, string(config.FindEntry("PlayerID")));
-
 		DossierHandler.LoadConfig(config.FindEntry("DossierData", new Archive()));
 		Lootboxes.SetValue(config.FindEntry("Lootboxes", new Archive()));
 		LastRun = Number(config.FindEntry("LastRan", (new Date()).valueOf()));
@@ -120,6 +102,14 @@ class com.fox.DropResearch.Mod {
 		if (OnGoingSpecialEvent()) {
 			ManualSave();
 			Unload();
+		}
+		// Workaround for mod loading last used characters config when running the mod on new character for the first time
+		// Everything works fine once the config has been generated for each character.
+		if (string(config.FindEntry("PlayerID")) != string(CharacterBase.GetClientCharID().GetInstance())){
+			if (Debug.GetValue())UtilsBase.PrintChatText("Mod tried to load configs for wrong character,generating new set of configs.");
+			DossierHandler.LoadConfig(new Archive());
+			Lootboxes.SetValue(new Archive());
+			ManualSave();
 		}
 	}
 	
