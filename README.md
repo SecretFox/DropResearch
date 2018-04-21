@@ -1,7 +1,7 @@
 # DropResearch
 
 **Donwload**  
-[![alt text](https://i.imgur.com/guClKqN.png "Download")](https://github.com/SecretFox/DropResearch/releases)
+[![alt text](https://i.imgur.com/bFEPBzA.gif "Download")](https://github.com/SecretFox/DropResearch/releases)
 
 **Install**  
 Unzip to `Secret World Legends\Data\Gui\Custom\Flash\` folder.  
