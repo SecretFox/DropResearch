@@ -2,7 +2,7 @@
 <Root>
   <Module  name = "DropResearch"
     movie       = "DropResearch\DropResearch.swf"
-    flags       = "GMF_CFG_STORE_USER_CONFIG | GMF_DONT_UNLOAD"
+    flags       = "GMF_CFG_STORE_USER_CONFIG"
     depth_layer = "Top"
     sub_depth   = "2"
     variable    = "DropResearch_Enabled"

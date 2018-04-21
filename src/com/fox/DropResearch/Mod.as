@@ -90,13 +90,32 @@ class com.fox.DropResearch.Mod {
 		GroupFinder.SignalClientStartedGroupFinderActivity.Disconnect(SlotJoinedGroupFinderBuffer, this);
 	}
 	
-	public function Activate(config:Archive) {
+	private function CheckIfCorrectConfig(ComparisonID){
+		if (ComparisonID != string(CharacterBase.GetClientCharID().GetInstance())){
+			if (Debug.GetValue()){
+				// this probably never gets called because debug defaults to false,and this issue only happens when configs have not yet beeen generated
+				UtilsBase.PrintChatText("Mod tried to load configs for wrong character,generating new set of configs.");
+			}
+			var mod:GUIModuleIF = GUIModuleIF.FindModuleIF("DropResearch");
+			var config:Archive = new Archive();
+			DossierHandler.LoadConfig(config);
+			Lootboxes.SetValue(config);
+			ManualSave();
+		}
+	}
+	
+	public function Activate(conf:Archive) {
+		var config:Archive = conf;
+		// Work around for mod loading wrong characters configs.
+		// Everything works fine once the config has been generated for each character once.
+		setTimeout(Delegate.create(this,CheckIfCorrectConfig),1000, string(config.FindEntry("PlayerID")));
+
 		DossierHandler.LoadConfig(config.FindEntry("DossierData", new Archive()));
 		Lootboxes.SetValue(config.FindEntry("Lootboxes", new Archive()));
 		LastRun = Number(config.FindEntry("LastRan", (new Date()).valueOf()));
 		GroupFinderID.SetValue(Number(config.FindEntry("GroupFinderID", 0 )));
-		Debug.SetValue(Boolean(config.FindEntry("Debug", false )));
-		PlayerInventory = new Inventory(new ID32(_global.Enums.InvType.e_Type_GC_BackpackContainer, ((Character.GetClientCharacter()).GetID()).GetInstance()));
+		Debug.SetValue(Boolean(config.FindEntry("Debug",false)));
+		PlayerInventory = new Inventory(new ID32(_global.Enums.InvType.e_Type_GC_BackpackContainer, CharacterBase.GetClientCharID().GetInstance()));
 		HookMissionRewardWindow();
 		if (OnGoingSpecialEvent()) {
 			ManualSave();
@@ -117,9 +136,10 @@ class com.fox.DropResearch.Mod {
 		var config:Archive = new Archive();
 		config.AddEntry("DossierData", Archive(DossierHandler.GetConfig()));
 		config.AddEntry("Lootboxes", Archive(Lootboxes.GetValue()));
-		config.AddEntry("Debug", Debug.GetValue());
+		config.AddEntry("Debug", Boolean(Debug.GetValue()));
 		config.AddEntry("GroupFinderID", Number(GroupFinderID.GetValue()));
 		config.AddEntry("LastRan", LastRun);
+		config.AddEntry("PlayerID", string(CharacterBase.GetClientCharID().GetInstance()));
 		mod.StoreConfig(config)
 	}
 
@@ -127,9 +147,10 @@ class com.fox.DropResearch.Mod {
 		var config:Archive = new Archive();
 		config.AddEntry("DossierData", Archive(DossierHandler.GetConfig()));
 		config.AddEntry("Lootboxes", Archive(Lootboxes.GetValue()));
-		config.AddEntry("Debug", Debug.GetValue());
+		config.AddEntry("Debug", Boolean(Debug.GetValue()));
 		config.AddEntry("GroupFinderID", Number(GroupFinderID.GetValue()));
 		config.AddEntry("LastRan", LastRun);
+		config.AddEntry("PlayerID", string(CharacterBase.GetClientCharID().GetInstance()));
 		return config
 	}
 
@@ -441,6 +462,5 @@ class com.fox.DropResearch.Mod {
 	private function ClearInventoryMonitoring() {
 		QuestsBase.SignalQuestRewardInventorySpace.Disconnect(InventoryFull, this);
 		PlayerInventory.SignalItemAdded.Disconnect(CheckIfMissionDossierBuffer, this);
-		if (Debug.GetValue()) UtilsBase.PrintChatText("Inventory monitoring stopped");
 	}
 }
