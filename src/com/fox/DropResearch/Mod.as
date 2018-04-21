@@ -40,7 +40,7 @@ class com.fox.DropResearch.Mod {
 	// Lootbox type that was last offered
 	private var OpenType:String;
 
-	// "Agent Dossier", due to german localization we have to use toLowerCase() on it and the item name
+	// "Agent Dossier", due to german localization we have to use toLowerCase() on it and the item name,or special dossiers wont be detected
 	// Agentendossier/Spezialagentendossier
 	static var DossierName:String = LDBFormat.LDBGetText(50200, 9403857).toLowerCase();
 
@@ -99,10 +99,6 @@ class com.fox.DropResearch.Mod {
 		Debug.SetValue(Boolean(config.FindEntry("Debug",false)));
 		PlayerInventory = new Inventory(new ID32(_global.Enums.InvType.e_Type_GC_BackpackContainer, CharacterBase.GetClientCharID().GetInstance()));
 		HookMissionRewardWindow();
-		if (OnGoingSpecialEvent()) {
-			ManualSave();
-			Unload();
-		}
 		// Workaround for mod loading last used characters config when running the mod on new character for the first time
 		// Everything works fine once the config has been generated for each character.
 		if (string(config.FindEntry("PlayerID")) != string(CharacterBase.GetClientCharID().GetInstance())){
@@ -110,6 +106,10 @@ class com.fox.DropResearch.Mod {
 			DossierHandler.LoadConfig(new Archive());
 			Lootboxes.SetValue(new Archive());
 			ManualSave();
+		}
+		if (OnGoingSpecialEvent()) {
+			ManualSave();
+			Unload();
 		}
 	}
 	
