@@ -75,7 +75,6 @@ class com.fox.DropResearch.Mod {
 		MissionCompletedSignal.SignalChanged.Connect(MissionCompleted, this);
 		GroupFinder.SignalClientStartedGroupFinderActivity.Connect(SlotJoinedGroupFinderBuffer, this);
 		
-		PlayerInventory = new Inventory(new ID32(_global.Enums.InvType.e_Type_GC_BackpackContainer, ((Character.GetClientCharacter()).GetID()).GetInstance()));
 		m_Uploader = new Uploader();
 	}
 	
@@ -97,11 +96,11 @@ class com.fox.DropResearch.Mod {
 		LastRun = Number(config.FindEntry("LastRan", (new Date()).valueOf()));
 		GroupFinderID.SetValue(Number(config.FindEntry("GroupFinderID", 0 )));
 		Debug.SetValue(Boolean(config.FindEntry("Debug", false )));
+		PlayerInventory = new Inventory(new ID32(_global.Enums.InvType.e_Type_GC_BackpackContainer, ((Character.GetClientCharacter()).GetID()).GetInstance()));
+		HookMissionRewardWindow();
 		if (OnGoingSpecialEvent()) {
 			ManualSave();
 			Unload();
-		}else{
-			HookMissionRewardWindow();
 		}
 	}
 	
@@ -149,12 +148,12 @@ class com.fox.DropResearch.Mod {
 				LastRun = current.valueOf();
 				StartUpload();
 			}else{
-				if (Debug.GetValue()) UtilsBase.PrintChatText(string(60 - Math.floor(hr * 60)) + "min until next dossier sync");
+				if (Debug.GetValue()) UtilsBase.PrintChatText(string(60 - Math.floor(hr * 60)) + "min until next sync");
 			}
 		}
 	}
 	
-	// Forces syncing
+	// Forces sync
 	private function ForceUpdate(){
 		if (ForceSync.GetValue()){
 			if (Debug.GetValue()) UtilsBase.PrintChatText("Forcing upload");
@@ -181,7 +180,6 @@ class com.fox.DropResearch.Mod {
 	}
 	
 	// Checks if player has queued for raid, is in raid instance,and that the chest can drop Dossier.
-	// If there is no dossier chance then player is oncooldown,and we return undefined
 	private function GetGFInstance(items:Array) {
 		var prefix:String;
 		if (Character.GetClientCharacter().GetPlayfieldID() == 5710) {
@@ -202,15 +200,12 @@ class com.fox.DropResearch.Mod {
 					return
 			}
 		}
-		if (prefix){
-			var found:Boolean = false;
-			for (var i in items){
-				var item:InventoryItem = items[i];
-				// Search for Agent Dossier, if there is one then we ignore this chest (repeated run,no loot,no dossiers)
-				// Alternatively we could use Character.GetClientCharacter().m_InvisibleBuffList[x] where X is 7961764 or 9125207 ( Story/Elite);
-				if (item.m_Name.toLowerCase() == DossierName){
-					return prefix
-				}
+		for (var i in items){
+			var item:InventoryItem = items[i];
+			// Search for Agent Dossier, if there isn't one then raid is on cooldown and we can ignore this lootbox
+			// Alternatively we could use Character.GetClientCharacter().m_InvisibleBuffList[x] where X is 7961764 or 9125207 ( Story/Elite );
+			if (item.m_Name.toLowerCase() == DossierName){
+				return prefix
 			}
 		}
 		return
@@ -376,11 +371,11 @@ class com.fox.DropResearch.Mod {
 						found = true;
 					}
 				}
-				//no dossier chance, set value so we can disconnect signals
+				//no dossier chance, set value to 1 so we know to disconnect signals
 				if (!found){
 					DistributedValueBase.SetDValue("MissionCompleted_DR", 1);
 				}
-				//Small delay for hooking up the signals,and then calling the original function
+				//Small delay to finish hooking up the signals and then calling the original function
 				setTimeout(Delegate.create(this, function() {
 					this._CollectRewardsHandler();
 				}), 50)
