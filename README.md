@@ -1,7 +1,7 @@
 # DropResearch
 
 **Donwload**  
-[![alt text](https://i.imgur.com/guClKqN.png "Download")](https://github.com/SecretFox/DropResearch/releases)
+[![alt text](https://i.imgur.com/bFEPBzA.gif "Download")](https://github.com/SecretFox/DropResearch/releases)
 
 **Install**  
 Unzip to `Secret World Legends\Data\Gui\Custom\Flash\` folder.  
@@ -9,16 +9,19 @@ Swf path should be `Secret World Legends\Data\Gui\Custom\Flash\DropResearch\Drop
 
 
 **About**  
-Tracks Dossiers from Dungeons,Raids,Scenarios,Regionals and Missions.  
-Only chests that have chance to drop dossier are counted towards Dungeons/Raids/Regionals.  
+Tracks dossiers from Dungeons,Raids,Scenarios,Regionals and Missions.  
+Only chests/missions that have a chance to drop are counted.  
+
 Also stores loot from raids and Caches.  
-Data is stored per character, and persists between reloadui/restarting the game.
+Data is stored per character, and persists between reloadui/restarting the game.  
+There should be no issues using alts or other running the mod on multiple computers.
 
-Data will be sent to http://secretfox.pythonanywhere.com/ when bank is opened, but max once per hour.  
+Collected data will get sent to http://secretfox.pythonanywhere.com/ when bank is opened, but max once per hour.  
 Alternatively you can force synchronization with `/Option DropResearch_ForceSync true` chat command.  
-Once upload has been completed all local data will be wiped to avoid inflating the preference file.
+Once upload has been completed all locally stored data will be wiped.
 
-To view data collected by you, you can use `/Option DropResearch_ShowData true` chat command.
+You can use `/Option DropResearch_ShowData true` chat command, to open in-game browser with your collected data.  
+You can copy and share the browser address to share your data with others.
 
 **Known Issues**
 * Mission tracking won't work with my other mod, MissionUtils, because it bypasses the missionreport window.

@@ -23,14 +23,19 @@ class com.fox.DropResearch.Mod {
 
 	// Tells us when to start tracking added items
 	private var MissionCompletedSignal:DistributedValue;
+	// Disables the mission report function until previous mission has been claimed.
+	private var MissionLock:DistributedValue;
+	private var clearlocktimeout;
 
 	//Selected groupfinder entry, used to tell apart NYR story/E1/E5/E10
 	private var GroupFinderID:DistributedValue;
-	
+
 	private var Debug:DistributedValue;
 	private var ForceSync:DistributedValue;
 	private var ShowData:DistributedValue;
-	
+	private var ShowPlayerID:DistributedValue;
+	private var ShowVersion:DistributedValue;
+
 	// Used to start upload
 	private var BankOpened:DistributedValue;
 
@@ -52,8 +57,8 @@ class com.fox.DropResearch.Mod {
 
 	public function Mod() {
 	}
-	
-	public function Load(){
+
+	public function Load() {
 		CharacterBase.SignalClientCharacterOfferedLootBox.Connect(SlotOfferedLootBox, this);
 		CharacterBase.SignalClientCharacterOpenedLootBox.Connect( SlotOpenedLootBox, this);
 		Lootboxes = DistributedValue.Create("Lootboxes_DR");
@@ -61,36 +66,47 @@ class com.fox.DropResearch.Mod {
 		Debug = DistributedValue.Create("DropResearch_Debug");
 		ForceSync = DistributedValue.Create("DropResearch_ForceSync");
 		ShowData = DistributedValue.Create("DropResearch_ShowData");
-		BankOpened = DistributedValue.Create("bank_window")
+		BankOpened = DistributedValue.Create("bank_window");
 		MissionCompletedSignal = DistributedValue.Create("MissionCompleted_DR");
 		
+		MissionLock = DistributedValue.Create("MissionLock_DR");
+		ShowPlayerID = DistributedValue.Create("DropResearch_PlayerID");
+		ShowVersion = DistributedValue.Create("DropResearch_Version");
+	
 		ShowData.SetValue(false);
 		ForceSync.SetValue(false);
 		Debug.SetValue(false);
 		MissionCompletedSignal.SetValue(false);
+		MissionLock.SetValue(false);
+		ShowPlayerID.SetValue(false);
+		ShowVersion.SetValue(false);
+
+		ShowPlayerID.SignalChanged.Connect(SlotShowPlayerID, this);
+		ShowVersion.SignalChanged.Connect(SlotShowVersion, this);
 		
 		ShowData.SignalChanged.Connect(ShowPlayerData, this);
 		ForceSync.SignalChanged.Connect(ForceUpdate, this);
 		BankOpened.SignalChanged.Connect(SendDataToServer, this);
 		MissionCompletedSignal.SignalChanged.Connect(MissionCompleted, this);
 		GroupFinder.SignalClientStartedGroupFinderActivity.Connect(SlotJoinedGroupFinderBuffer, this);
-		
+
 		m_Uploader = new Uploader();
 	}
-	
-	public function Unload(){
-		ClearInventoryMonitoring(false);
+
+	public function Unload() {
+		ClearMissionlock();
 		ForceSync.SignalChanged.Disconnect(ForceUpdate, this);
 		MissionCompletedSignal.SignalChanged.Disconnect(MissionCompleted, this);
 		ShowData.SignalChanged.Disconnect(ShowPlayerData, this);
 		BankOpened.SignalChanged.Disconnect(SendDataToServer, this);
-		
+
 		CharacterBase.SignalClientCharacterOfferedLootBox.Disconnect(SlotOfferedLootBox, this);
 		CharacterBase.SignalClientCharacterOpenedLootBox.Disconnect( SlotOpenedLootBox, this);
 		GroupFinder.SignalClientStartedGroupFinderActivity.Disconnect(SlotJoinedGroupFinderBuffer, this);
 	}
-	
+
 	public function Activate(conf:Archive) {
+		
 		var config:Archive = conf;
 		DossierHandler.LoadConfig(config.FindEntry("DossierData", new Archive()));
 		Lootboxes.SetValue(config.FindEntry("Lootboxes", new Archive()));
@@ -101,7 +117,7 @@ class com.fox.DropResearch.Mod {
 		HookMissionRewardWindow();
 		// Workaround for mod loading last used characters config when running the mod on new character for the first time
 		// Everything works fine once the config has been generated for each character.
-		if (string(config.FindEntry("PlayerID")) != string(CharacterBase.GetClientCharID().GetInstance())){
+		if (string(config.FindEntry("PlayerID")) != string(CharacterBase.GetClientCharID().GetInstance())) {
 			if (Debug.GetValue())UtilsBase.PrintChatText("Mod tried to load configs for wrong character,generating new set of configs.");
 			DossierHandler.LoadConfig(new Archive());
 			Lootboxes.SetValue(new Archive());
@@ -112,16 +128,16 @@ class com.fox.DropResearch.Mod {
 			Unload();
 		}
 	}
-	
+
 	//shows statistics for player
-	private function ShowPlayerData(){
-		if (ShowData.GetValue()){
+	private function ShowPlayerData() {
+		if (ShowData.GetValue()) {
 			m_Uploader.ShowPlayerData();
 			ShowData.SetValue(false)
 		}
 	}
-	
-	private function ManualSave(){
+
+	private function ManualSave() {
 		var mod:GUIModuleIF = GUIModuleIF.FindModuleIF("DropResearch");
 		var config:Archive = new Archive();
 		config.AddEntry("DossierData", Archive(DossierHandler.GetConfig()));
@@ -147,27 +163,41 @@ class com.fox.DropResearch.Mod {
 	private function OnGoingSpecialEvent() {
 		return Character.GetClientCharacter().m_BuffList["9420855"];
 	}
+	
+	private function SlotShowPlayerID(dv){
+		if (dv.GetValue()){
+			UtilsBase.PrintChatText("PlayerID is " + CharacterBase.GetClientCharID().GetInstance());
+			dv.SetValue(false);
+		}
+	}
+	
+	private function SlotShowVersion(dv){
+		if (dv.GetValue()){
+			UtilsBase.PrintChatText("DropResearch v.0.4.0");
+			dv.SetValue(false);
+		}
+	}
 
 //Data Syncing
 	// Bank opened, sync max once per hour
 	private function SendDataToServer() {
-		if(BankOpened.GetValue()){
+		if (BankOpened.GetValue()) {
 			var current:Date = new Date();
 			var ms = (current.valueOf() - LastRun);
 			var hr = ms / (1000 * 60 * 60);
-			if (hr > 1){
+			if (hr > 1) {
 				LastRun = current.valueOf();
 				StartUpload();
-			}else{
+			} else {
 				if (Debug.GetValue()) UtilsBase.PrintChatText(string(60 - Math.floor(hr * 60)) + "min until next sync");
 			}
 		}
 	}
-	
+
 	// Forces sync
-	private function ForceUpdate(){
-		if (ForceSync.GetValue()){
-			if (Debug.GetValue()) UtilsBase.PrintChatText("Forcing upload");
+	private function ForceUpdate() {
+		if (ForceSync.GetValue()) {
+			UtilsBase.PrintChatText("Forcing synchronization");
 			StartUpload();
 			ForceSync.SetValue(false);
 		}
@@ -180,7 +210,7 @@ class com.fox.DropResearch.Mod {
 //GroupFinder stuff
 
 	//takes a moment to update
-	private function SlotJoinedGroupFinderBuffer(){
+	private function SlotJoinedGroupFinderBuffer() {
 		setTimeout(Delegate.create(this, SlotJoinedGroupFinder), 500);
 	}
 	private function SlotJoinedGroupFinder() {
@@ -189,7 +219,7 @@ class com.fox.DropResearch.Mod {
 		// we really need that GroupFinderID for raids,manually saving in case of stuck loading screen
 		ManualSave();
 	}
-	
+
 	// Checks if player has queued for raid, is in raid instance,and that the chest can drop Dossier.
 	private function GetGFInstance(items:Array) {
 		var prefix:String;
@@ -211,11 +241,11 @@ class com.fox.DropResearch.Mod {
 					return
 			}
 		}
-		for (var i in items){
+		for (var i in items) {
 			var item:InventoryItem = items[i];
 			// Search for Agent Dossier, if there isn't one then raid is on cooldown and we can ignore this lootbox
 			// Alternatively we could use Character.GetClientCharacter().m_InvisibleBuffList[x] where X is 7961764 or 9125207 ( Story/Elite );
-			if (item.m_Name.toLowerCase() == DossierName){
+			if (item.m_Name.toLowerCase() == DossierName) {
 				return prefix
 			}
 		}
@@ -234,7 +264,7 @@ class com.fox.DropResearch.Mod {
 		// boxType 6 is Tribal
 		// this could be used to tell apart caches,but im already using first item ID which works just fine.
 		//if (Debug.GetValue()) UtilsBase.PrintChatText("boxtype " + string(boxType));
-		
+
 		if (tokenType == _global.Enums.Token.e_Scenario_Key || tokenType == _global.Enums.Token.e_Dungeon_Key || tokenType == _global.Enums.Token.e_Lair_Key) {
 			// Check if it can award dossier
 			for (var i:Number = 0; i < possibleItems.length; i++) {
@@ -328,24 +358,24 @@ class com.fox.DropResearch.Mod {
 				// Store loot data in object for now
 				// format is ItemID:SignetID or ItemID or ItemName
 				if (OpenType != "Scenario" && OpenType != "Dungeon" && OpenType != "Lair") {
-					if (item.m_ACGItem.m_TemplateID0){
-						if (item.m_ACGItem.m_TemplateID2){
+					if (item.m_ACGItem.m_TemplateID0) {
+						if (item.m_ACGItem.m_TemplateID2) {
 							var amount = LootboxLoot[string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2)] | 0;
 							LootboxLoot[string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2)] = amount + 1;
-						}else{
+						} else {
 							var amount = LootboxLoot[string(item.m_ACGItem.m_TemplateID0)] | 0;
 							LootboxLoot[string(item.m_ACGItem.m_TemplateID0)] = amount + 1;
 						}
-					}else{
+					} else {
 						var amount = LootboxLoot[item.m_Name] | 0;
 						LootboxLoot[item.m_Name] = amount + 1;
 					}
 				}
 			}
 			// Archieve lootbox results
-			for (var undef in LootboxLoot){
+			for (var undef in LootboxLoot) {
 				if (Debug.GetValue()) UtilsBase.PrintChatText("Saving lootbox data to archieve")
-				var LootboxArchieve:Archive = Lootboxes.GetValue();
+					var LootboxArchieve:Archive = Lootboxes.GetValue();
 				var LootboxData:Archive = Archive(LootboxArchieve.FindEntry(OpenType, new Archive()));
 				var openedAmount = Number(LootboxData.FindEntry("Opened", 0));
 				LootboxData.ReplaceEntry("Opened", openedAmount + 1);
@@ -370,67 +400,106 @@ class com.fox.DropResearch.Mod {
 			setTimeout(Delegate.create(this, HookMissionRewardWindow), 50);
 			return
 		}
-		if (!RewardWindow.prototype._CollectRewardsHandler){
+		if (!RewardWindow.prototype._CollectRewardsHandler) {
 			RewardWindow.prototype._CollectRewardsHandler = RewardWindow.prototype["CollectRewardsHandler"];
-			RewardWindow.prototype.CollectRewardsHandler = function () {
-				var found = false;
-				for (var i in this.m_RewardArray) {
-					var item:InventoryItem = this.m_RewardArray[i];
-					//Agent Dossier
-					if (item.m_Name == LDBFormat.LDBGetText(50200, 9403857)) {
-						DistributedValueBase.SetDValue("MissionCompleted_DR", this.m_QuestID);
-						found = true;
+			RewardWindow.prototype.CollectRewardsHandler = function (event,Changed) {
+				// Changed is undefined on the first run and true if MissionCompleted has already been set for this mission
+				if (!Changed) {
+					// MissionLock is set to True when signals get hooked
+					// This prevents from collecting rewards until previous mission rewards has finished running.
+					if (DistributedValueBase.GetDValue("MissionLock_DR")) {
+						setTimeout(Delegate.create(this, this.CollectRewardsHandler), 5,event);
+						return
+					}
+					var found = false;
+					for (var i in this.m_RewardArray) {
+						var item:InventoryItem = this.m_RewardArray[i];
+						//Agent Dossier
+						if (item.m_Name == LDBFormat.LDBGetText(50200, 9403857)) {
+							DistributedValueBase.SetDValue("MissionCompleted_DR", this.m_QuestID);
+							found = true;
+							break
+						}
+					}
+					//no dossier chance, set value to 1 so we know to disconnect signals
+					if (!found) {
+						DistributedValueBase.SetDValue("MissionCompleted_DR", 1);
 					}
 				}
-				//no dossier chance, set value to 1 so we know to disconnect signals
-				if (!found){
-					DistributedValueBase.SetDValue("MissionCompleted_DR", 1);
+				// Checks that everything has finished hooking before collecting rewards
+				// (Value set to false after hooking)
+				if (DistributedValueBase.GetDValue("MissionCompleted_DR")) {
+					setTimeout(Delegate.create(this, this.CollectRewardsHandler), 5, event,true);
+					return
 				}
-				//Small delay to finish hooking up the signals and then calling the original function
-				setTimeout(Delegate.create(this, function() {
-					this._CollectRewardsHandler();
-				}), 50)
+				this._CollectRewardsHandler();
 			}
 		}
 	}
-	
+
 	private function MissionCompleted() {
-		if (MissionCompletedSignal.GetValue()){
-			//clear previously running monitoring
-			ClearInventoryMonitoring();
-			clearTimeout(InvMonTimeout);
-			var value = MissionCompletedSignal.GetValue()
+		if (MissionCompletedSignal.GetValue()) {
+			/*
+				OLD METHOD
+				//clear previously running monitoring
+				ClearInventoryMonitoring();
+				clearTimeout(InvMonTimeout);
+			*/
+			var value = MissionCompletedSignal.GetValue();
 			//value = 1 -> no dossier chance
-			if (value == 1){
+			if (value == 1) {
+				ClearMissionlock();//this shouldn't be necessary
 				MissionCompletedSignal.SetValue(false);
 			}
-			// value = QuestID -> dossier mission, track items for 1s, or until next mission is claimed. 
-			else{
+			// value = QuestID -> dossier mission, track inventory items, stop tracking 100ms after last item was added,or if inventory was full
+			else {
 				var questrewards = QuestsBase.GetAllRewards();
 				// Checking that the missionID exists on pending rewards before doing anything
-				for (var i in questrewards){
+				for (var i in questrewards) {
 					var qID = questrewards[i].m_QuestTaskID;
-					if(qID == value){
+					if (qID == value) {
+						// While locked no other mission reports can be claimed, set to true once collection finishes
+						MissionLock.SetValue(true);
 						QuestsBase.SignalQuestRewardInventorySpace.Connect(InventoryFull, this);
 						PlayerInventory.SignalItemAdded.Connect(CheckIfMissionDossierBuffer, this);
-						InvMonTimeout = setTimeout(Delegate.create(this, ClearInventoryMonitoring), 1000);
-						DossierHandler.ValueChanged("MissionsDone", 1);
-						if (Debug.GetValue()) UtilsBase.PrintChatText("Inventory monitoring started");
+						PlayerInventory.SignalItemChanged.Connect(ItemChanged, this);
+						//InvMonTimeout = setTimeout(Delegate.create(this, ClearInventoryMonitoring), 1000);
+						DossierHandler.ValueChanged("MissionsDone", 1)
+						//settings this to false will let the report window to know we are ready to collect rewards
 						MissionCompletedSignal.SetValue(false);
+						if (Debug.GetValue()) UtilsBase.PrintChatText("Inventory monitoring started");
 						break
 					}
 				}
 			}
 		}
 	}
-	
+
 	// This only triggers for new stacks, which is fine
-	// It has a small buffer so that the dossier has chance to fully load.
-	// Dossiers are also the first items i have seen to trigger SignalItemLoaded, which seems to take a moment
-	private function CheckIfMissionDossierBuffer(inventoryID:com.Utils.ID32, itemPos:Number){
-		setTimeout(Delegate.create(this, CheckIfMissionDossier), 100,itemPos);
+	// Dossiers are also the first items i have seen to trigger SignalItemLoaded, which seems to take a moment(requiring the buffer)
+	private function CheckIfMissionDossierBuffer(inventoryID:com.Utils.ID32, itemPos:Number) {
+		setTimeout(Delegate.create(this, CheckIfMissionDossier), 100, itemPos);
+		clearTimeout(clearlocktimeout);
+		clearlocktimeout = setTimeout(Delegate.create(this, ClearMissionlock), 100);
 	}
-	
+
+	// Only used to see if rewards were claimed
+	private function ItemChanged() {
+		clearTimeout(clearlocktimeout);
+		clearlocktimeout = setTimeout(Delegate.create(this, ClearMissionlock), 100);
+	}
+
+	// Missionlock is cleared 100ms after last item was added/changed, or if inventory was full
+	// Dossiers are always accompanied by some other rewards, so one of the two inventory signals should always trigger,
+	// 		if this were to change i would probably need to track added tokens or exp too.
+	// While at it we disconnect the signals
+	private function ClearMissionlock() {
+		QuestsBase.SignalQuestRewardInventorySpace.Disconnect(InventoryFull, this);
+		PlayerInventory.SignalItemAdded.Disconnect(CheckIfMissionDossierBuffer, this);
+		PlayerInventory.SignalItemChanged.Disconnect(ItemChanged, this);
+		MissionLock.SetValue(false);
+	}
+
 	// Checks if the added item is dossier
 	private function CheckIfMissionDossier(pos:Number) {
 		var item:InventoryItem = PlayerInventory.GetItemAt(pos);
@@ -441,16 +510,20 @@ class com.fox.DropResearch.Mod {
 			ManualSave();
 		}
 	}
-	
+
 	// In case of full inventory
 	private function InventoryFull() {
+		ClearMissionlock();
 		DossierHandler.ValueChanged("MissionsDone", -1);
 		if (Debug.GetValue()) UtilsBase.PrintChatText("Inventory was Full");
 	}
-	
-	//Stops inventory monitoring
-	private function ClearInventoryMonitoring() {
-		QuestsBase.SignalQuestRewardInventorySpace.Disconnect(InventoryFull, this);
-		PlayerInventory.SignalItemAdded.Disconnect(CheckIfMissionDossierBuffer, this);
-	}
+
+	/*
+	  OLD METHOD
+		//Stops inventory monitoring
+		private function ClearInventoryMonitoring() {
+			QuestsBase.SignalQuestRewardInventorySpace.Disconnect(InventoryFull, this);
+			PlayerInventory.SignalItemAdded.Disconnect(CheckIfMissionDossierBuffer, this);
+		}
+	*/
 }
