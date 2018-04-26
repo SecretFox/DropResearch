@@ -114,6 +114,17 @@ class com.fox.DropResearch.Cache extends BaseClass {
 		PrintDebug("Offered " + string(OpenType), true);
 	}
 
+	// obtainedItems doesn't contain the weapon suffixes, we want to be able to tell if weapon is MK II or MK III
+	private function FindInventoryItem(item:InventoryItem){
+		for (var i:Number = 0; i < PlayerInventory.GetMaxItems(); i++){
+			var CompareItem:InventoryItem = PlayerInventory.GetItemAt(i);
+			if (CompareItem.m_ACGItem.m_TemplateID0 == item.m_ACGItem.m_TemplateID0 && !CompareItem.m_IsBoundToPlayer){
+				return CompareItem;
+			}
+		}
+		return item;
+	}
+	
 	private function SlotOpenedLootBox(obtainedItems:Array, lootResult:Number, moreAvailable:Boolean) {
 		if (OpenType && obtainedItems.length>0) {
 			PrintDebug("Opening: " + OpenType, true);
@@ -178,6 +189,27 @@ class com.fox.DropResearch.Cache extends BaseClass {
 				// Store loot data in object for now
 				// format is ItemID:SignetID or ItemID or ItemName
 				if (OpenType != "Scenario" && OpenType != "Dungeon" && OpenType != "Lair") {
+					var weapon:Boolean;
+						switch (item.m_RealType) {
+							case 30104:
+							case 30106:
+							case 30107:
+							case 30118:
+							case 30112:
+							case 30110:
+							case 30111:
+							case 30100:
+							case 30101:
+								weapon = true
+								break;
+							default:
+								weapon = false;
+								break;
+						}
+					//Obtained items doesn't contain the weapon "signet", attempt to find it in inventory
+					if (weapon && item.m_ACGItem.m_TemplateID0){
+						item = FindInventoryItem(item);
+					}
 					if (item.m_ACGItem.m_TemplateID0) {
 						// probably wont work,but worth a shot
 						// items in the obtainedItems array aren't the actual items received

@@ -138,7 +138,7 @@ class com.fox.DropResearch.Mod extends BaseClass{
 
 	private function SlotShowVersion(dv) {
 		if (dv.GetValue()) {
-			UtilsBase.PrintChatText("DropResearch v.0.4.0");
+			UtilsBase.PrintChatText("DropResearch v-"+ModVersion);
 			dv.SetValue(false);
 		}
 	}

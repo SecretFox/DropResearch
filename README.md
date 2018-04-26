@@ -24,7 +24,7 @@ To view your data on in-game browser you can use `/Option DropResearch_ShowData 
 You can copy and share the browser address to share your data with others.  
 
 **Chat commands**  
-    `/option DropResearch_ShowData` Displays your collected data
+    `/option DropResearch_ShowData` Displays your collected data  
 	`/option DropResearch_Debug` Enables Debug mode  
 	`/option DropResearch_ForceSync` Forces data upload  
 	`/option DropResearch_PlayerID` Prints out playerID (v.0.4.0 and up)  
