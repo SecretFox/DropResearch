@@ -11,12 +11,20 @@ Swf path should be `Secret World Legends\Data\Gui\Custom\Flash\DropResearch\Drop
 **About**  
 * Tracks dossiers from Dungeons,Raids,Scenarios,Regionals and Missions. Only chests and missions that have a chance to drop dossier are counted.
 * Tracks loot from raids and Caches.  
-* Tracks loot from consumables, such as filthy key.
+* Tracks loot from consumables;
+    * Glyph Reward bags
+    * Agent Vanity reward bags
+    * Agent Boosters
+    * Agent gear reward bags
+    * Kaidan container keys
+    * Extraordinary talisman reward bag(Tribal)
+    * It's very easy for me to add more
+
 
 Data is stored locally for each characters,and persists between restarts.
-There should be no issues using alts or other running the mod on multiple computers.
+There should be no issues using alts or running the mod on multiple computers.  
 
-Collected data will get sent to http://secretfox.pythonanywhere.com/ whenever; bank is opened, Tradepost is opened, or vendor is opened. However upload will happen only once per hour max.
+Collected data will get sent to http://secretfox.pythonanywhere.com/ whenever; bank, Tradepost , or vendor is opened. However upload will happen only once per hour max.
 Alternatively you can force synchronization with `/Option DropResearch_ForceSync true` chat command.  
 Once upload has been completed all locally stored data will be wiped.
 
@@ -32,12 +40,14 @@ You can copy and share the browser address to share your data with others.
 
 **Shortening chat commands**  
 The Chat commands are bit long, but there is a way to shorten them through "alias", here are some examples.  
-`/Alias sync option DropResearch_ForceSync true` will allow you to upload your data with `/sync`  
-`/Alias dropdata option DropResearch_ShowData true` will allow you to view your own statistics with `/dropdata`  
+`/alias sync option DropResearch_ForceSync true` will allow you to upload your data with `/sync`  
+`/alias dropdata option DropResearch_ShowData true` will allow you to view your own statistics with `/dropdata`  
+Aliases are account wide,and you only need to create them once.
 
 **Known Issues**
-* Mission tracking won't work with my other mod, MissionUtils, because it bypasses the missionreport window.
-* Uploader.as file was not included in the source files, to make sending fake data slightly harder.
+* Mission tracking won't work with my other mod, MissionUtils, because it bypasses the missionreport window.  
+* Glyph bags and Container keys opened by BagUtils are not tracked.  
+* Uploader.as file was not included in the source files, to make sending fake data slightly harder.  
 
 **TODO?**
-* Combine some of the cache data, if it starts looking like all of them have equal chances for distillates/3rd Age Fragments.
+* More things to track?
