@@ -1,6 +1,5 @@
 import com.GameInterface.DistributedValue;
-import com.GameInterface.Game.Character;
-import com.GameInterface.InventoryItem;
+import com.GameInterface.DistributedValueBase;
 import com.Utils.Archive;
 import com.fox.DropResearch.BaseClass;
 import mx.utils.Delegate;
@@ -13,21 +12,25 @@ class com.fox.DropResearch.Consumable extends BaseClass {
 	private var ItemUsed:DistributedValue;
 	private var watchedItemID:Number;
 	private var ConsumableTimeout;
-	private var Player:Character = Character.GetClientCharacter();
 	public static var WatchedConsumables:Object = new Object();
 
 	public function Consumable() {
-		//glyph bag(KD)
-		WatchedConsumables["9284361"] = new Array("item");
+		//glyph reward bag, all zones seem to have same glyph bags
+		WatchedConsumables["9284361"] = ["item"];
 		//Ext.ord.Talisman bag (Tribal)
-		WatchedConsumables["9418597"] = new Array("item");
+		WatchedConsumables["9418597"] = ["item"];
 		//Agent Vanity Reward bag(blue)
-		WatchedConsumables["9407816"] = new Array("item");
-		//Agent gear reward bag(green)
-		WatchedConsumables["9400612"] = new Array("item");
+		WatchedConsumables["9407816"] = ["item"];
+		//Agent gear reward bag(green,blue,purple)
+		WatchedConsumables["9400612"] = ["item"];
+		WatchedConsumables["9400614"] = ["item"];
+		WatchedConsumables["9400616"] = ["item"];
+		//Agent booster,normal,Saf
+		WatchedConsumables["9419233"] = ["item"];
+		WatchedConsumables["9405652"] = ["item"];
+
 		//Kaidan key
-		WatchedConsumables["9338616"] = new Array("item", "currency");
-		
+		WatchedConsumables["9338616"] = ["item", "currency"];
 		//witch doctors weapon bag
 		// WatchedConsumables["9418801"] = new Array("item"); // Always mk3, assuming equal chance for all weapons/suffixes
 		//frost-bound weapon bag
@@ -39,150 +42,133 @@ class com.fox.DropResearch.Consumable extends BaseClass {
 		HookItems();
 	}
 	//probably not needed
-	public function Disconnect(){
+	public function Disconnect() {
 		ItemUsed.SignalChanged.Disconnect(ConsumableUsed, this);
 	}
 	//New stack started
 	private function SlotItemAddedBuffer(inventoryID:com.Utils.ID32, itemPos:Number) {
-		ClearConsumableMonitoring();
-		ConsumableTimeout = setTimeout(Delegate.create(this, SlotItemAdded), 100,itemPos);
+		var item = PlayerInventory.GetItemAt(itemPos);
+		if (item) {
+			PrintDebug(item.m_Name+" Received from consumable", true);
+			ClearConsumableMonitoring();
+			ArchieveConsumable(item);
+		} else {
+			setTimeout(Delegate.create(this, SlotItemAdded), 250,itemPos);
+		}
 	}
 
 	// Stack size changed
 	private function SlotItemStatChangedBuffer(inventoryID:com.Utils.ID32, itemPos:Number, stat:Number, newValue:Number ) {
-		// If player opens from stack of items we don't want it to trigger for the consumed items
-		if (PlayerInventory.GetItemAt(itemPos).m_ACGItem.m_TemplateID0 != Number(watchedItemID)) {
-			ClearConsumableMonitoring();
-			setTimeout(Delegate.create(this, SlotItemStatChanged), 100, itemPos,stat);
+		// If player opens from stack of items we don't want it to trigger for the consumed item
+		var item = PlayerInventory.GetItemAt(itemPos);
+		if (item.m_ACGItem.m_TemplateID0 != Number(watchedItemID)) {
+			if (item) {
+				PrintDebug(item.m_Name+" Received from consumable", true);
+				ArchieveConsumable(item);
+			} else {
+				setTimeout(Delegate.create(this, SlotItemStatChanged), 250, itemPos);
+			}
 		}
 	}
-
-	private function SlotItemAdded(itemPos:Number) {
-		var item = PlayerInventory.GetItemAt(itemPos);
-		PrintDebug(item.m_Name+" Received from consumable",true);
-		ArchieveConsumable(item);
-	}
-
-	private function SlotItemStatChanged(itemPos:Number, stat) {
-		var item = PlayerInventory.GetItemAt(itemPos);
-		PrintDebug(item.m_Name+" Received from consumable",true);
-		ArchieveConsumable(item);
-	}
-	
-	private function SlotCurrencyAdded(id:Number, newValue:Number, oldValue:Number){
-		if(newValue>oldValue){
-			ClearConsumableMonitoring();
+	private function SlotCurrencyAdded(id:Number, newValue:Number, oldValue:Number) {
+		if (newValue>oldValue) {
 			var amount = newValue-oldValue;
 			PrintDebug(amount + "of id:" + id + " Currency received from consumable", true);
 			ArchieveConsumable(id);
 		}
 	}
-	
-	//Currently doesn't support counting the currency or multiple items
-	private function ArchieveConsumable(item){
-		if(watchedItemID && item){
-			var id;
-			// ItemID:SignetID
-			if (item.m_ACGItem.m_TemplateID2) {
-				id = string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2);
-			} else if(item.m_ACGItem.m_TemplateID0) {
-				id = string(item.m_ACGItem.m_TemplateID0);
-			}
-			//Fallback
-			else if(item.m_Name){
-				id = item.m_Name;
-			}
-			//Currency
-			else{
-				id = item;
-			}
-			var ConsumableArchieves:Archive = Consumables.GetValue();
-			var ConsumableArchieve = ConsumableArchieves.FindEntry(string(watchedItemID), new Archive());
-			var openedAmount = Number(ConsumableArchieve.FindEntry("Opened", 0));
-			ConsumableArchieve.ReplaceEntry("Opened", openedAmount + 1)
-			var amount = Number(ConsumableArchieve.FindEntry(id, 0));
-			ConsumableArchieve.ReplaceEntry(id, amount + 1);
-			ConsumableArchieves.ReplaceEntry(string(watchedItemID), ConsumableArchieve);
-			Consumables.SetValue(ConsumableArchieves);
-			ManualSave();
-			watchedItemID = undefined;
+
+	// In case the item was not found
+	private function SlotItemAdded(itemPos:Number) {
+		var item = PlayerInventory.GetItemAt(itemPos);
+		if (item) {
+			PrintDebug(item.m_Name+" Received from consumable", true);
+			ArchieveConsumable(item);
+		}
+	}
+	private function SlotItemStatChanged(itemPos:Number) {
+		var item = PlayerInventory.GetItemAt(itemPos);
+		if (item) {
+			PrintDebug(item.m_Name+" Received from consumable", true);
+			ArchieveConsumable(item);
 		}
 	}
 
+	//Currently doesn't support counting the currency, or multiple items from consumable
+	private function ArchieveConsumable(item) {
+		var id;
+		// ItemID:SignetID
+		if (item.m_ACGItem.m_TemplateID2) {
+			id = string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2);
+		} else if (item.m_ACGItem.m_TemplateID0) {
+			id = string(item.m_ACGItem.m_TemplateID0);
+		}
+		//Fallback
+		else if (item.m_Name) {
+			id = item.m_Name;
+		}
+		//Currency
+		else {
+			id = item;
+		}
+		var ConsumableArchieves:Archive = Consumables.GetValue();
+		var ConsumableArchieve = ConsumableArchieves.FindEntry(string(watchedItemID), new Archive());
+		var openedAmount = Number(ConsumableArchieve.FindEntry("Opened", 0));
+		ConsumableArchieve.ReplaceEntry("Opened", openedAmount + 1)
+		var amount = Number(ConsumableArchieve.FindEntry(id, 0));
+		ConsumableArchieve.ReplaceEntry(id, amount + 1);
+		ConsumableArchieves.ReplaceEntry(string(watchedItemID), ConsumableArchieve);
+		Consumables.SetValue(ConsumableArchieves);
+		ManualSave();
+		ClearConsumableMonitoring();
+	}
+
 	private function ClearConsumableMonitoring() {
+		clearTimeout(ConsumableTimeout);
 		PlayerInventory.SignalItemAdded.Disconnect(SlotItemAddedBuffer, this);
 		PlayerInventory.SignalItemStatChanged.Disconnect(SlotItemStatChangedBuffer, this);
 		Player.SignalTokenAmountChanged.Disconnect(SlotCurrencyAdded, this);
+		ItemUsed.SetValue(false)
+
 	}
 
 	private function ConsumableUsed() {
-		if (ItemUsed.GetValue() != false) {
-			watchedItemID = Number(ItemUsed.GetValue());
+		var val = ItemUsed.GetValue();
+		if (val) {
+			watchedItemID = Number(val);
 			clearTimeout(ConsumableTimeout);
-			for (var i in WatchedConsumables[string(watchedItemID)]){
-				if (WatchedConsumables[string(watchedItemID)][i] == "item"){
+			for (var i in WatchedConsumables[val]) {
+				if (WatchedConsumables[val][i] == "item") {
 					PlayerInventory.SignalItemAdded.Connect(SlotItemAddedBuffer, this);
 					PlayerInventory.SignalItemStatChanged.Connect(SlotItemStatChangedBuffer, this);
-				}
-				else if (WatchedConsumables[string(watchedItemID)][i] == "currency"){
+				} else if (WatchedConsumables[val][i] == "currency") {
 					Player.SignalTokenAmountChanged.Connect(SlotCurrencyAdded, this);
-					
 				}
 			}
 			ConsumableTimeout = setTimeout(Delegate.create(this, ClearConsumableMonitoring), 500);
 		}
-		ItemUsed.SetValue(false)
 	}
 
-
-	private function HookSlot(clip) {
-		var slot = clip["m_SlotMC"];
-		var item:InventoryItem = clip["m_ItemData"];
-		if (!slot._onMousePress) {
-			slot._onMousePress = slot.onMousePress;
-			slot.onMousePress = function (buttonIdx:Number, clickCount:Number) {
-				if (com.fox.DropResearch.Consumable.WatchedConsumables[string(this.m_ItemData.m_ACGItem.m_TemplateID0)] && !Key.isDown(Key.CONTROL) && (clickCount==2 || buttonIdx == 2)) {
-					com.GameInterface.DistributedValueBase.SetDValue("ItemUsed_DR", string(item.m_ACGItem.m_TemplateID0));
-					setTimeout(Delegate.create(this, slot._onMousePress), 25, buttonIdx, clickCount);
-				} else {
-					slot._onMousePress(buttonIdx, clickCount);
-				}
-			}
-		}
-	}
-
-	// Could probably somehow connect iconbox signals instead?
 	// Delays opening of watched item until i have connected my own signals
-	// Only delays is ctrl is not held down, and double-click or right-click
-	// There is a 25ms window where wrong item could be registered, not really a problem unless player receives item from other source 
-	//	 or opens other item simultaneously (using Xeio's bagUtil mod for example)
-	// 
-	private function HookItems() {
-		if (!_root.backpack2 || !_global.com.Components.ItemSlot.prototype.onMousePress) {
-			setTimeout(Delegate.create(this, HookItems), 50);
-			return
-		}
-		// Add our own stuff to ItemSlot OnMousePress function
-		if (!_global.com.Components.ItemSlot.prototype._onMousePress) {
-			_global.com.Components.ItemSlot.prototype._onMousePress = _global.com.Components.ItemSlot.prototype.onMousePress;
-			_global.com.Components.ItemSlot.prototype.onMousePress = function (buttonIdx:Number, clickCount:Number) {
-				if (com.fox.DropResearch.Consumable.WatchedConsumables[string(this.m_ItemData.m_ACGItem.m_TemplateID0)] && !Key.isDown(Key.CONTROL) && (clickCount==2 || buttonIdx == 2)) {
-					com.GameInterface.DistributedValueBase.SetDValue("ItemUsed_DR", string(this.m_ItemData.m_ACGItem.m_TemplateID0));
-					setTimeout(Delegate.create(this, this._onMousePress), 25, buttonIdx, clickCount);
-				} else {
-					this._onMousePress(buttonIdx, clickCount);
-				}
+	// Doesn't work with BagUtil, could probably UnLoad/Load to fix that
+	public function HookItems() {
+		if (!_global.com.GameInterface.InventoryBase.prototype._UseItem) {
+			if (!_global.com.GameInterface.InventoryBase.prototype.UseItem) {
+				setTimeout(Delegate.create(this, HookItems), 500);
+				return
 			}
-		}
-
-		// Connect the ones that were already initialized
-		// Prototype will take care of the added items
-		for (var i in _root.backpack2.m_IconBoxes) {
-			var box = _root.backpack2.m_IconBoxes[i];
-			for (var y in box["m_ItemSlots"]) {
-				for (var x in box["m_ItemSlots"][y]) {
-					var slot = box["m_ItemSlots"][y][x];
-					HookSlot(slot);
+			_global.com.GameInterface.InventoryBase.prototype._UseItem = _global.com.GameInterface.InventoryBase.prototype.UseItem;
+			_global.com.GameInterface.InventoryBase.prototype.UseItem = function (pos) {
+				if (com.fox.DropResearch.Consumable.WatchedConsumables[string(this.m_Items[pos].m_ACGItem.m_TemplateID0)]) {
+					DistributedValueBase.SetDValue("ItemUsed_DR",string(this.m_Items[pos].m_ACGItem.m_TemplateID0));
+					setTimeout(Delegate.create(this, this._UseItem), 25, pos);
+				} else {
+					// Still opening previous
+					if (DistributedValueBase.GetDValue("ItemUsed_DR")) {
+						setTimeout(Delegate.create(this,this.UseItem), 25, pos);
+					} else {
+						this._UseItem(pos);
+					}
 				}
 			}
 		}

@@ -10,7 +10,7 @@ import mx.utils.Delegate;
  * @author fox
  */
 class com.fox.DropResearch.Cache extends BaseClass {
-	
+
 	private var OpenType;
 	public var SpecialEvent = false;
 
@@ -19,25 +19,25 @@ class com.fox.DropResearch.Cache extends BaseClass {
 		CharacterBase.SignalClientCharacterOpenedLootBox.Connect( SlotOpenedLootBox, this);
 		GroupFinder.SignalClientStartedGroupFinderActivity.Connect(SlotJoinedGroupFinderBuffer, this);
 	}
-	//probably not needed
-	public function Disconnect(){
+	public function Disconnect() {
 		CharacterBase.SignalClientCharacterOfferedLootBox.Disconnect(SlotOfferedLootBox, this);
 		CharacterBase.SignalClientCharacterOpenedLootBox.Disconnect( SlotOpenedLootBox, this);
 		GroupFinder.SignalClientStartedGroupFinderActivity.Disconnect(SlotJoinedGroupFinderBuffer, this);
 	}
-	//takes a moment to update
+	//takes a moment to update, hopefully triggers before player gets sent in to the instnace
 	private function SlotJoinedGroupFinderBuffer() {
 		setTimeout(Delegate.create(this, SlotJoinedGroupFinder), 500);
 	}
-	
+
 	private function SlotJoinedGroupFinder() {
 		GroupFinderID.SetValue(GroupFinder.GetActiveQueue());
 		PrintDebug("starting GF activity: " + GroupFinder.GetActiveQueue(), true);
-		// we really need that GroupFinderID for raids,manually saving in case of stuck loading screen
+		// we really need that GroupFinderID, and NYR tends to freeze
 		ManualSave();
 	}
 
 	// Checks if player has queued for raid, is in raid instance,and that the chest can drop Dossier.
+	// TODO; Expand this to dungeons so we can tell them apart(in case of Dossier nerf on lower elites)
 	private function GetGFInstance(items:Array) {
 		var prefix:String;
 		if (Character.GetClientCharacter().GetPlayfieldID() == 5710) {
@@ -115,20 +115,20 @@ class com.fox.DropResearch.Cache extends BaseClass {
 	}
 
 	// obtainedItems doesn't contain the weapon suffixes, we want to be able to tell if weapon is MK II or MK III
-	private function FindInventoryItem(item:InventoryItem){
-		for (var i:Number = 0; i < PlayerInventory.GetMaxItems(); i++){
+	private function FindInventoryItem(item:InventoryItem) {
+		for (var i:Number = 0; i < PlayerInventory.GetMaxItems(); i++) {
 			var CompareItem:InventoryItem = PlayerInventory.GetItemAt(i);
-			if (CompareItem.m_ACGItem.m_TemplateID0 == item.m_ACGItem.m_TemplateID0 && !CompareItem.m_IsBoundToPlayer){
+			if (CompareItem.m_ACGItem.m_TemplateID0 == item.m_ACGItem.m_TemplateID0 && !CompareItem.m_IsBoundToPlayer) {
 				return CompareItem;
 			}
 		}
 		return item;
 	}
-	
+
 	private function SlotOpenedLootBox(obtainedItems:Array, lootResult:Number, moreAvailable:Boolean) {
 		if (OpenType && obtainedItems.length>0) {
 			PrintDebug("Opening: " + OpenType, true);
-			if(!SpecialEvent){
+			if (!SpecialEvent) {
 				switch (OpenType) {
 					case "Scenario":
 						DossierValueChanged("ScenariosDone",1)
@@ -159,7 +159,7 @@ class com.fox.DropResearch.Cache extends BaseClass {
 				var item:InventoryItem = obtainedItems[i];
 				PrintDebug(item.m_Name + " received from lootbox", true);
 				// Check if the received item name contains "agent gossier"(localized) text.
-				if(!SpecialEvent){
+				if (!SpecialEvent) {
 					if (item.m_Name.toLowerCase().indexOf(DossierName) != -1 && item.m_Name) {
 						switch (OpenType) {
 							case "Scenario":
@@ -189,32 +189,28 @@ class com.fox.DropResearch.Cache extends BaseClass {
 				// Store loot data in object for now
 				// format is ItemID:SignetID or ItemID or ItemName
 				if (OpenType != "Scenario" && OpenType != "Dungeon" && OpenType != "Lair") {
-					var weapon:Boolean;
-						switch (item.m_RealType) {
-							case 30104:
-							case 30106:
-							case 30107:
-							case 30118:
-							case 30112:
-							case 30110:
-							case 30111:
-							case 30100:
-							case 30101:
-								weapon = true
-								break;
-							default:
-								weapon = false;
-								break;
-						}
+					var weapon:Boolean = false;
+					switch (item.m_RealType) {
+						case 30104:
+						case 30106:
+						case 30107:
+						case 30118:
+						case 30112:
+						case 30110:
+						case 30111:
+						case 30100:
+						case 30101:
+							weapon = true;
+							break;
+						default:
+							weapon = false;
+							break;
+					}
 					//Obtained items doesn't contain the weapon "signet", attempt to find it in inventory
-					if (weapon && item.m_ACGItem.m_TemplateID0){
+					if (weapon && item.m_ACGItem.m_TemplateID0) {
 						item = FindInventoryItem(item);
 					}
 					if (item.m_ACGItem.m_TemplateID0) {
-						// probably wont work,but worth a shot
-						// items in the obtainedItems array aren't the actual items received
-						// for example when you get a pure anima ObtainedItems tells that you received 1x "3X anima potion",while in reality you receive 3x "Anima Potion"'s
-						// same goes for the distillates and weapons
 						if (item.m_ACGItem.m_TemplateID2) {
 							var amount = LootboxLoot[string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2)] | 0;
 							LootboxLoot[string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2)] = amount + 1;
