@@ -68,6 +68,45 @@ class com.fox.DropResearch.Cache extends BaseClass {
 		}
 		return
 	}
+	
+	private function HasMegaboss(possibleItems:Array){
+		for (var i in possibleItems){
+			var item:InventoryItem = possibleItems[i];
+			if (item.m_ACGItem.m_TemplateID0 == 9124215) return true;
+			else if (item.m_ACGItem.m_TemplateID0 == 9124216) return true;
+			else if (item.m_ACGItem.m_TemplateID0 == 9343405) return true;
+			else if (item.m_ACGItem.m_TemplateID0 == 9121078) return true;
+		}
+		return false
+	}
+	
+	private function GetEvents(possibleItems:Array){
+		var Dungeon = Player.m_BuffList["9419386"];
+		var Regional = Player.m_BuffList["9419387"];
+		var Scenario = Player.m_BuffList["9395902"];
+		if (Dungeon || Regional || Regional) {
+			PrintDebug("Ongoing free key event, attempting to identify lootbox", true);
+			// Check if it can award dossier
+			for (var i:Number = 0; i < possibleItems.length; i++) {
+				var item:InventoryItem = possibleItems[i];
+				if (item.m_Name.toLowerCase() == DossierName) {
+					var Playfield = Character.GetClientCharacter().GetPlayfieldID();
+					var Megaboss = HasMegaboss(possibleItems);
+					if ((Playfield ==  7612 || Playfield ==  7622 || Playfield ==  7602 ) && Scenario ){
+						return "Scenario"
+					}
+					else if (Megaboss && Regional ){
+						return "Lair"
+					}
+					// polaris, HR, DW, ankh, HE
+					else if ((Playfield == 5040 || Playfield == 5140 || Playfield == 5170 || Playfield == 5080 || Playfield == 5160) && Dungeon ){
+						return "Dungeon"
+					}
+				}
+			}
+		}
+		return undefined
+	}
 
 //Caches and lootboxes
 	private function SlotOfferedLootBox(possibleItems:Array, tokenType:Number, boxType:Number, backgroundId:Number) {
@@ -111,6 +150,10 @@ class com.fox.DropResearch.Cache extends BaseClass {
 			var raidType = GetGFInstance(possibleItems);
 			if (raidType) OpenType = raidType;
 		}
+		if (!OpenType) {
+			var EvenType = GetEvents(possibleItems);
+			if (EvenType) OpenType = EvenType;
+		}	
 		PrintDebug("Offered " + string(OpenType), true);
 	}
 
@@ -125,6 +168,23 @@ class com.fox.DropResearch.Cache extends BaseClass {
 		return item;
 	}
 
+	private function isWeapon(item:InventoryItem){
+		switch (item.m_RealType) {
+			case 30104:
+			case 30106:
+			case 30107:
+			case 30118:
+			case 30112:
+			case 30110:
+			case 30111:
+			case 30100:
+			case 30101:
+				return true
+			default:
+				return false
+		}
+	}
+	
 	private function SlotOpenedLootBox(obtainedItems:Array, lootResult:Number, moreAvailable:Boolean) {
 		if (OpenType && obtainedItems.length>0) {
 			PrintDebug("Opening: " + OpenType, true);
@@ -189,23 +249,7 @@ class com.fox.DropResearch.Cache extends BaseClass {
 				// Store loot data in object for now
 				// format is ItemID:SignetID or ItemID or ItemName
 				if (OpenType != "Scenario" && OpenType != "Dungeon" && OpenType != "Lair") {
-					var weapon:Boolean = false;
-					switch (item.m_RealType) {
-						case 30104:
-						case 30106:
-						case 30107:
-						case 30118:
-						case 30112:
-						case 30110:
-						case 30111:
-						case 30100:
-						case 30101:
-							weapon = true;
-							break;
-						default:
-							weapon = false;
-							break;
-					}
+					var weapon = isWeapon(item);
 					//Obtained items doesn't contain the weapon "signet", attempt to find it in inventory
 					if (weapon && item.m_ACGItem.m_TemplateID0) {
 						item = FindInventoryItem(item);
