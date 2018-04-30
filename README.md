@@ -24,7 +24,7 @@ Swf path should be `Secret World Legends\Data\Gui\Custom\Flash\DropResearch\Drop
 Data is stored locally for each characters,and persists between restarts.
 There should be no issues using alts or running the mod on multiple computers.  
 
-Collected data will get sent to http://secretfox.pythonanywhere.com/ whenever; bank, Tradepost , or vendor is opened. However upload will happen only once per hour max.
+Collected data will get sent to http://secretfox.pythonanywhere.com/ when bank, Tradepost, or vendor is opened,but only max once per hour.
 Alternatively you can force synchronization with `/Option DropResearch_ForceSync true` chat command.  
 Once upload has been completed all locally stored data will be wiped.
 
@@ -33,21 +33,22 @@ You can copy and share the browser address to share your data with others.
 
 **Chat commands**  
     `/option DropResearch_ShowData` Displays your collected data  
-	`/option DropResearch_Debug` Enables Debug mode  
-	`/option DropResearch_ForceSync` Forces data upload  
-	`/option DropResearch_PlayerID` Prints out playerID (v.0.4.0 and up)  
-	`/option DropResearch_Version` Print out current mod version (v.0.4.0 and up)  
+    `/option DropResearch_Debug` Enables Debug mode  
+    `/option DropResearch_ForceSync` Forces data upload  
+    `/option DropResearch_PlayerID` Prints out playerID (v.0.4.0 and up)  
+    `/option DropResearch_Version` Print out current mod version (v.0.4.0 and up)  
 
 **Shortening chat commands**  
 The Chat commands are bit long, but there is a way to shorten them through "alias", here are some examples.  
-`/alias sync option DropResearch_ForceSync true` will allow you to upload your data with `/sync`  
-`/alias dropdata option DropResearch_ShowData true` will allow you to view your own statistics with `/dropdata`  
+`/alias sync option DropResearch_ForceSync true` allows you to upload your data with `/sync`  
+`/alias dropdata option DropResearch_ShowData true` allows you to view your own statistics with `/dropdata`  
 Aliases are account wide,and you only need to create them once.
 
 **Known Issues**
 * Mission tracking won't work with my other mod, MissionUtils, because it bypasses the missionreport window.  
-* Glyph bags and Container keys opened by BagUtils are not tracked.  
+* Glyph bags and Container keys opened by BagUtil mod are not tracked.  
 * Uploader.as file was not included in the source files, to make sending fake data slightly harder.  
 
 **TODO?**
 * More things to track?
+* Bugs?
