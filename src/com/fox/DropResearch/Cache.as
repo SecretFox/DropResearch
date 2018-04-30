@@ -84,7 +84,7 @@ class com.fox.DropResearch.Cache extends BaseClass {
 		var Dungeon = Player.m_BuffList["9419386"];
 		var Regional = Player.m_BuffList["9419387"];
 		var Scenario = Player.m_BuffList["9395902"];
-		if (Dungeon || Regional || Regional) {
+		if (Dungeon || Regional || Scenario) {
 			PrintDebug("Ongoing free key event, attempting to identify lootbox", true);
 			// Check if it can award dossier
 			for (var i:Number = 0; i < possibleItems.length; i++) {
