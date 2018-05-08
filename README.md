@@ -32,7 +32,7 @@ To view your data on in-game browser you can use `/Option DropResearch_ShowData 
 You can copy and share the browser address to share your data with others.  
 
 **Privacy**  
-* Theoretically anyone could access your collected data if they knew your characterID, however finding it would require some modding experience, as it is not visibly listed anywhere on the main site or game. I'll see if i can add some privacy settings in the future though.
+Theoretically anyone could access your collected data if they knew your characterID, however finding it would require some modding experience, as it is not visibly listed anywhere on the main site or game. I'll see if i can add some privacy settings in the future though.
 
 **Chat commands**  
     `/option DropResearch_ShowData` Displays your collected data  
