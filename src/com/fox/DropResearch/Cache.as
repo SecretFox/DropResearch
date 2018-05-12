@@ -3,6 +3,7 @@ import com.GameInterface.Game.CharacterBase;
 import com.GameInterface.GroupFinder;
 import com.GameInterface.InventoryItem;
 import com.Utils.Archive;
+import com.Utils.LDBFormat;
 import com.fox.DropResearch.BaseClass;
 import mx.utils.Delegate;
 /**
@@ -168,17 +169,18 @@ class com.fox.DropResearch.Cache extends BaseClass {
 		return item;
 	}
 
+	// Lootbox weapons don't have realtype either?(unconfirmed)
 	private function isWeapon(item:InventoryItem){
-		switch (item.m_RealType) {
-			case 30104:
-			case 30106:
-			case 30107:
-			case 30118:
-			case 30112:
-			case 30110:
-			case 30111:
-			case 30100:
-			case 30101:
+		switch (item.m_Name) {
+			case LDBFormat.LDBGetText(50200,9258183):
+			case LDBFormat.LDBGetText(50200,9297746):
+			case LDBFormat.LDBGetText(50200,9261658):
+			case LDBFormat.LDBGetText(50200,9270307):
+			case LDBFormat.LDBGetText(50200,9285747):
+			case LDBFormat.LDBGetText(50200,9301742):
+			case LDBFormat.LDBGetText(50200,9256311):
+			case LDBFormat.LDBGetText(50200,9267485):
+			case LDBFormat.LDBGetText(50200,9285645):
 				return true
 			default:
 				return false
@@ -256,8 +258,9 @@ class com.fox.DropResearch.Cache extends BaseClass {
 					}
 					if (item.m_ACGItem.m_TemplateID0) {
 						if (item.m_ACGItem.m_TemplateID2) {
-							var amount = LootboxLoot[string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2)] | 0;
-							LootboxLoot[string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2)] = amount + 1;
+							var ID = string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2)
+							var amount = LootboxLoot[ID] | 0;
+							LootboxLoot[ID] = amount + 1;
 						} else {
 							var amount = LootboxLoot[string(item.m_ACGItem.m_TemplateID0)] | 0;
 							LootboxLoot[string(item.m_ACGItem.m_TemplateID0)] = amount + 1;

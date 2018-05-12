@@ -38,7 +38,7 @@ class com.fox.DropResearch.Mission extends BaseClass {
 			RewardWindow.prototype.CollectRewardsHandler = function (event) {
 				// This prevents from collecting rewards until previous mission rewards has finished running.
 				if (com.GameInterface.DistributedValueBase.GetDValue("MissionCompleted_DR")) {
-					setTimeout(Delegate.create(this, this.CollectRewardsHandler), 5, event);
+					setTimeout(Delegate.create(this, this.CollectRewardsHandler), 50, event);
 					return
 				}
 				var found = false;
@@ -73,6 +73,9 @@ class com.fox.DropResearch.Mission extends BaseClass {
 			}
 			// value = QuestID -> dossier mission, track inventory items, stop tracking 100ms after last item was added,or if inventory was full
 			else {
+				// Should set it back to False even if quest is not found on pending rewards
+				clearTimeout(clearlocktimeout);
+				clearlocktimeout = setTimeout(Delegate.create(this, ClearMissionlock), 1000);
 				var questrewards = QuestsBase.GetAllRewards();
 				// Checking that the missionID exists on pending rewards before doing anything
 				for (var i in questrewards) {
@@ -84,8 +87,6 @@ class com.fox.DropResearch.Mission extends BaseClass {
 						//PlayerInventory.SignalItemLoaded.Connect(SlotItemLoaded, this);
 						DossierValueChanged("MissionsDone", 1)
 						// in case item added,stat changed,and InventoryFull fail to trigger
-						clearTimeout(clearlocktimeout);
-						clearlocktimeout = setTimeout(Delegate.create(this, ClearMissionlock), 1000);
 						break
 					}
 				}

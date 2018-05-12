@@ -25,9 +25,9 @@ class com.fox.DropResearch.Consumable extends BaseClass {
 		WatchedConsumables["9400612"] = ["item"];
 		WatchedConsumables["9400614"] = ["item"];
 		WatchedConsumables["9400616"] = ["item"];
-		//Agent booster,normal,Saf
-		WatchedConsumables["9419233"] = ["item"];
+		//Agent boosters,normal,Saf
 		WatchedConsumables["9405652"] = ["item"];
+		WatchedConsumables["9419208"] = ["item"];
 
 		//Kaidan key
 		WatchedConsumables["9338616"] = ["item", "currency"];
