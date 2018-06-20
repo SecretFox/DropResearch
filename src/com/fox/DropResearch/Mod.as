@@ -75,6 +75,7 @@ class com.fox.DropResearch.Mod extends BaseClass {
 		m_Consumable = undefined;
 		m_CacheHandler = undefined;
 		m_MissionHandler = undefined;
+		m_Uploader = undefined;
 	}
 
 	public function Activate(config:Archive) {
@@ -121,14 +122,14 @@ class com.fox.DropResearch.Mod extends BaseClass {
 
 	private function SlotShowPlayerID(dv) {
 		if (dv.GetValue()) {
-			UtilsBase.PrintChatText("PlayerID is " + PlayerID);
+			PrintDebug("PlayerID is " + PlayerID);
 			dv.SetValue(false);
 		}
 	}
 
 	private function SlotShowVersion(dv) {
 		if (dv.GetValue()) {
-			UtilsBase.PrintChatText("DropResearch v-"+ModVersion);
+			PrintDebug("DropResearch v-" + ModVersion);
 			dv.SetValue(false);
 		}
 	}

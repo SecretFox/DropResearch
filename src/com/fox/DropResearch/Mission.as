@@ -75,6 +75,7 @@ class com.fox.DropResearch.Mission extends BaseClass {
 			else {
 				// Should set it back to False even if quest is not found on pending rewards
 				clearTimeout(clearlocktimeout);
+				// in case item added,stat changed,and InventoryFull fail to trigger
 				clearlocktimeout = setTimeout(Delegate.create(this, ClearMissionlock), 1000);
 				var questrewards = QuestsBase.GetAllRewards();
 				// Checking that the missionID exists on pending rewards before doing anything
@@ -86,7 +87,6 @@ class com.fox.DropResearch.Mission extends BaseClass {
 						PlayerInventory.SignalItemStatChanged.Connect(SlotItemStatChanged, this);
 						//PlayerInventory.SignalItemLoaded.Connect(SlotItemLoaded, this);
 						DossierValueChanged("MissionsDone", 1)
-						// in case item added,stat changed,and InventoryFull fail to trigger
 						break
 					}
 				}
@@ -94,7 +94,7 @@ class com.fox.DropResearch.Mission extends BaseClass {
 		}
 	}
 
-	/* This only triggers for new stacks, which is fine. Could also try connecting to ItemBox
+	/* This only triggers for new stacks, which is fine.
 	 * Checks item(s) after 300ms, and clears signals 100ms after last item was added.
 	 *
 	 * Thoughts:

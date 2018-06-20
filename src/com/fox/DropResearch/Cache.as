@@ -3,7 +3,6 @@ import com.GameInterface.Game.CharacterBase;
 import com.GameInterface.GroupFinder;
 import com.GameInterface.InventoryItem;
 import com.Utils.Archive;
-import com.Utils.LDBFormat;
 import com.fox.DropResearch.BaseClass;
 import mx.utils.Delegate;
 /**
@@ -41,7 +40,7 @@ class com.fox.DropResearch.Cache extends BaseClass {
 	// TODO; Expand this to dungeons so we can tell them apart(in case of Dossier nerf on lower elites)
 	private function GetGFInstance(items:Array) {
 		var prefix:String;
-		if (Character.GetClientCharacter().GetPlayfieldID() == 5710) {
+		if (Character.GetClientCharacter().GetPlayfieldID() == 5710 || Character.GetClientCharacter().GetPlayfieldID() == 5715) {
 			switch (GroupFinderID.GetValue()) {
 				case _global.Enums.LFGQueues.e_NYRaidStory:
 					prefix = "NYRStory";
@@ -99,8 +98,10 @@ class com.fox.DropResearch.Cache extends BaseClass {
 					else if (Megaboss && Regional ){
 						return "Lair"
 					}
-					// polaris, HR, DW, ankh, HE
-					else if ((Playfield == 5040 || Playfield == 5140 || Playfield == 5170 || Playfield == 5080 || Playfield == 5160) && Dungeon ){
+					// polaris, HR, DW, ankh*2, HE
+					else if ((
+						Playfield == 5040 || Playfield == 5140 || Playfield == 5170 || Playfield == 5080 || Playfield == 5160 || Playfield == 6230) 
+						&& Dungeon) {
 						return "Dungeon"
 					}
 				}
@@ -109,7 +110,6 @@ class com.fox.DropResearch.Cache extends BaseClass {
 		return undefined
 	}
 
-//Caches and lootboxes
 	private function SlotOfferedLootBox(possibleItems:Array, tokenType:Number, boxType:Number, backgroundId:Number) {
 		delete OpenType;
 		// boxType 0 for raid
@@ -120,7 +120,13 @@ class com.fox.DropResearch.Cache extends BaseClass {
 		// boxType 5 is winter
 		// boxType 6 is Tribal
 		// this could be used to tell apart caches,but im already using first item ID which works just fine.
-		//if PrintDebug("Offered " + boxType, true);
+		//PrintDebug("Offered " + string(OpenType), true);
+		
+		if (boxType == 7){
+			OpenType = "Anniversary";
+			PrintDebug("Offered " + string(OpenType), true);
+			return
+		}
 		if (tokenType == _global.Enums.Token.e_Scenario_Key || tokenType == _global.Enums.Token.e_Dungeon_Key || tokenType == _global.Enums.Token.e_Lair_Key) {
 			// Check if it can award dossier
 			for (var i:Number = 0; i < possibleItems.length; i++) {
@@ -151,36 +157,68 @@ class com.fox.DropResearch.Cache extends BaseClass {
 			var raidType = GetGFInstance(possibleItems);
 			if (raidType) OpenType = raidType;
 		}
+		// During free key events key type is undefined
 		if (!OpenType) {
 			var EvenType = GetEvents(possibleItems);
 			if (EvenType) OpenType = EvenType;
-		}	
+		}
 		PrintDebug("Offered " + string(OpenType), true);
 	}
+	
+	// Finds the weapon after 500ms and replaces archieve entry that does not have signet with signeted one.
+	private function GetSuffix(item:InventoryItem, Opened){
+		if(item && Opened){
+			var LootboxArchieve:Archive = Lootboxes.GetValue();
+			var LootboxData:Archive = Archive(LootboxArchieve.FindEntry(Opened));
+			if(LootboxData){
+				var amount = Number(LootboxData.FindEntry(string(item.m_ACGItem.m_TemplateID0), 0));
+				if (amount){
+					var newItem:InventoryItem = PlayerInventory.GetItemAt(item.m_InventoryPos);
+					if (newItem.m_ACGItem.m_TemplateID0 == item.m_ACGItem.m_TemplateID0 && newItem.m_ACGItem.m_TemplateID2){
+						PrintDebug("Fixing weapon suffix", true);
+						LootboxData.DeleteEntry(string(item.m_ACGItem.m_TemplateID0));
+						var id = string(newItem.m_ACGItem.m_TemplateID0) + ":" +  string(newItem.m_ACGItem.m_TemplateID2);
+						var OpenAmount = LootboxData.FindEntry(id, 0);
+						LootboxData.ReplaceEntry(id, OpenAmount+1);
+					}
+					LootboxArchieve.ReplaceEntry(Opened, LootboxData);
+					Lootboxes.SetValue(LootboxArchieve);
+				}
+			}
+		}
+	}
 
-	// obtainedItems doesn't contain the weapon suffixes, we want to be able to tell if weapon is MK II or MK III
+	// This function finds the weapon position in inventory and if it does not contain suffix it will scheduel another check after 500ms
+	// current theory; Item is added to inventory without suffix, which gets added after a moment
 	private function FindInventoryItem(item:InventoryItem) {
-		for (var i:Number = 0; i < PlayerInventory.GetMaxItems(); i++) {
+		for (var i:Number = 0; i <= PlayerInventory.GetMaxItems(); i++) {
 			var CompareItem:InventoryItem = PlayerInventory.GetItemAt(i);
-			if (CompareItem.m_ACGItem.m_TemplateID0 == item.m_ACGItem.m_TemplateID0 && !CompareItem.m_IsBoundToPlayer) {
+			PrintDebug("check item : " + CompareItem.m_Name,true );
+			if (CompareItem.m_Name.indexOf(item.m_Name) != -1 && CompareItem.m_Name && item.m_Name && !CompareItem.m_IsBoundToPlayer) {
+				PrintDebug("Found item : " + CompareItem.m_Name,true);
+				if (!CompareItem.m_ACGItem.m_TemplateID2){
+					PrintDebug("Attempting to fix suffix",true);
+					setTimeout(Delegate.create(this, GetSuffix), 500, CompareItem, OpenType);
+				}
 				return CompareItem;
 			}
 		}
+		PrintDebug("Match not found " + item.m_Name,true);
 		return item;
 	}
 
 	// Lootbox weapons don't have realtype either?(unconfirmed)
 	private function isWeapon(item:InventoryItem){
-		switch (item.m_Name) {
-			case LDBFormat.LDBGetText(50200,9258183):
-			case LDBFormat.LDBGetText(50200,9297746):
-			case LDBFormat.LDBGetText(50200,9261658):
-			case LDBFormat.LDBGetText(50200,9270307):
-			case LDBFormat.LDBGetText(50200,9285747):
-			case LDBFormat.LDBGetText(50200,9301742):
-			case LDBFormat.LDBGetText(50200,9256311):
-			case LDBFormat.LDBGetText(50200,9267485):
-			case LDBFormat.LDBGetText(50200,9285645):
+		switch (Number(item.m_RealType)) {
+			case 30104:
+			case 30106:
+			case 30107:
+			case 30118:
+			case 30112:
+			case 30110:
+			case 30111:
+			case 30100:
+			case 30101:
 				return true
 			default:
 				return false
@@ -252,19 +290,15 @@ class com.fox.DropResearch.Cache extends BaseClass {
 				// format is ItemID:SignetID or ItemID or ItemName
 				if (OpenType != "Scenario" && OpenType != "Dungeon" && OpenType != "Lair") {
 					var weapon = isWeapon(item);
-					//Obtained items doesn't contain the weapon "signet", attempt to find it in inventory
-					if (weapon && item.m_ACGItem.m_TemplateID0) {
-						item = FindInventoryItem(item);
-					}
+					PrintDebug("Is weapon : " + item.m_Name + " " +weapon,true);
+					// Obtained items doesn't contain the weapon "signet", attempt to find it in inventory
+					// If it fails to retrieve suffix it will check the item position again after 500ms.
+					if (weapon)	item = FindInventoryItem(item);
 					if (item.m_ACGItem.m_TemplateID0) {
-						if (item.m_ACGItem.m_TemplateID2) {
-							var ID = string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2)
-							var amount = LootboxLoot[ID] | 0;
-							LootboxLoot[ID] = amount + 1;
-						} else {
-							var amount = LootboxLoot[string(item.m_ACGItem.m_TemplateID0)] | 0;
-							LootboxLoot[string(item.m_ACGItem.m_TemplateID0)] = amount + 1;
-						}
+						var ID = string(item.m_ACGItem.m_TemplateID0);
+						if (item.m_ACGItem.m_TemplateID2) ID += ":" + item.m_ACGItem.m_TemplateID2;
+						var amount = LootboxLoot[ID] | 0;
+						LootboxLoot[ID] = amount + 1;
 					} else {
 						var amount = LootboxLoot[item.m_Name] | 0;
 						LootboxLoot[item.m_Name] = amount + 1;
@@ -272,6 +306,7 @@ class com.fox.DropResearch.Cache extends BaseClass {
 				}
 			}
 			// Archieve lootbox results
+			// idk how to properly check if object is empty
 			for (var undef in LootboxLoot) {
 				PrintDebug("Saving lootbox data to archieve", true);
 				var LootboxArchieve:Archive = Lootboxes.GetValue();

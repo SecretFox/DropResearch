@@ -98,10 +98,9 @@ class com.fox.DropResearch.Consumable extends BaseClass {
 	private function ArchieveConsumable(item) {
 		var id;
 		// ItemID:SignetID
-		if (item.m_ACGItem.m_TemplateID2) {
-			id = string(item.m_ACGItem.m_TemplateID0) + ":" + string(item.m_ACGItem.m_TemplateID2);
-		} else if (item.m_ACGItem.m_TemplateID0) {
+		if (item.m_ACGItem.m_TemplateID0) {
 			id = string(item.m_ACGItem.m_TemplateID0);
+			if (item.m_ACGItem.m_TemplateID2) id += ":" + string(item.m_ACGItem.m_TemplateID2);
 		}
 		//Fallback
 		else if (item.m_Name) {
@@ -149,8 +148,11 @@ class com.fox.DropResearch.Consumable extends BaseClass {
 		}
 	}
 
-	// Delays opening of watched item until i have connected my own signals
-	// Doesn't work with BagUtil, could probably UnLoad/Load to fix that
+	/* 
+	* Prototyping Inventory instead of InventoryBase would allow this to somewhat work with items used by BagUtils.
+	* However with no clear way to tell where the item was received from there would be mistakes due to high opening speed of the mod.
+	* This only matters for Glyph Bags and Container keys, which have plenty of data anyways.
+	*/ 
 	public function HookItems() {
 		if (!_global.com.GameInterface.InventoryBase.prototype._UseItem) {
 			if (!_global.com.GameInterface.InventoryBase.prototype.UseItem) {

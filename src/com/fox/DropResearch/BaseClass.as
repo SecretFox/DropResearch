@@ -12,9 +12,9 @@ import com.Utils.LDBFormat;
 class com.fox.DropResearch.BaseClass {
 	// Archieve that contain dossier data
 	private var Dossier:DistributedValue;
-	// Archieve that contains archieves of cache and raid loot
+	// Nested archieve of cache and raid loot
 	private var Lootboxes:DistributedValue;
-	// Archieve that contains archieves of consumable loot
+	// Nested archieve of consumable loot
 	private var Consumables:DistributedValue;
 	private var Debug:DistributedValue;
 	private var GroupFinderID:DistributedValue;
@@ -26,7 +26,8 @@ class com.fox.DropResearch.BaseClass {
 	// "Agent Dossier", due to german localization we have to use toLowerCase() on it and the item name,or special dossiers wont be detected
 	// Agentendossier/Spezialagentendossier
 	static var DossierName:String = LDBFormat.LDBGetText(50200, 9403857).toLowerCase();
-	static var ModVersion = "0.4.6"
+	static var ModVersion = "0.4.7"
+	static var ModName = "DropResearch"
 
 	public function BaseClass() {
 		Lootboxes = DistributedValue.Create("Lootboxes_DR");
