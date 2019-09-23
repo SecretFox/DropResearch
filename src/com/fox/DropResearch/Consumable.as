@@ -25,9 +25,17 @@ class com.fox.DropResearch.Consumable extends BaseClass {
 		WatchedConsumables["9400612"] = ["item"];
 		WatchedConsumables["9400614"] = ["item"];
 		WatchedConsumables["9400616"] = ["item"];
-		//Agent boosters,normal,Saf
+		//Some of the Hex bags..there seems to be more than 3
+		WatchedConsumables["9454373"] = ["item"];
+		WatchedConsumables["9454375"] = ["item"];
+		WatchedConsumables["9405788"] = ["item"];
+		
+		WatchedConsumables["9454379"] = ["item"];
+		//Agent boosters,normal, Saf, Druid, Mason
 		WatchedConsumables["9405652"] = ["item"];
 		WatchedConsumables["9419208"] = ["item"];
+		WatchedConsumables["9452284"] = ["item"];
+		WatchedConsumables["9463101"] = ["item"];
 
 		//Kaidan key
 		WatchedConsumables["9338616"] = ["item", "currency"];

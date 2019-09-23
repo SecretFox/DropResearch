@@ -12,7 +12,12 @@ import mx.utils.Delegate;
 class com.fox.DropResearch.Cache extends BaseClass {
 
 	private var OpenType;
-	public var SpecialEvent = false;
+	public var SpecialEvent = false
+	static var LockboxKey = _global.Enums.Token.e_Lockbox_Key;
+	static var EpicLockboxKey = _global.Enums.Token.e_Epic_Lockbox_Key;
+	static var ScenarioKey = _global.Enums.Token.e_Scenario_Key;
+	static var DungeonKey = _global.Enums.Token.e_Dungeon_Key;
+	static var LairKey = _global.Enums.Token.e_Lair_Key;
 
 	public function Cache() {
 		CharacterBase.SignalClientCharacterOfferedLootBox.Connect(SlotOfferedLootBox, this);
@@ -110,7 +115,7 @@ class com.fox.DropResearch.Cache extends BaseClass {
 		return undefined
 	}
 
-	private function SlotOfferedLootBox(possibleItems:Array, tokenType:Number, boxType:Number, backgroundId:Number) {
+	private function SlotOfferedLootBox(possibleItems:Array, tokenType, boxType:Number, backgroundId:Number) {
 		delete OpenType;
 		// boxType 0 for raid
 		// boxType 0 for scenario
@@ -127,19 +132,24 @@ class com.fox.DropResearch.Cache extends BaseClass {
 			PrintDebug("Offered " + string(OpenType), true);
 			return
 		}
-		if (tokenType == _global.Enums.Token.e_Scenario_Key || tokenType == _global.Enums.Token.e_Dungeon_Key || tokenType == _global.Enums.Token.e_Lair_Key) {
+		if (boxType == 8){
+			OpenType = "Newcache";
+			PrintDebug("Opened " + string(OpenType), true);
+			return
+		}
+		if (tokenType == ScenarioKey || tokenType == DungeonKey || tokenType == LairKey) {
 			// Check if it can award dossier
 			for (var i:Number = 0; i < possibleItems.length; i++) {
 				var item:InventoryItem = possibleItems[i];
 				if (item.m_Name.toLowerCase() == DossierName) {
 					switch (tokenType) {
-						case _global.Enums.Token.e_Scenario_Key:
+						case ScenarioKey:
 							OpenType = "Scenario";
 							break
-						case _global.Enums.Token.e_Dungeon_Key:
+						case DungeonKey:
 							OpenType = "Dungeon";
 							break
-						case _global.Enums.Token.e_Lair_Key:
+						case LairKey:
 							OpenType = "Lair";
 							break
 					}
@@ -147,7 +157,7 @@ class com.fox.DropResearch.Cache extends BaseClass {
 			}
 		}
 		// Cache, we want to store the loot
-		else if (tokenType == _global.Enums.Token.e_Lockbox_Key) {
+		else if (string(tokenType) == string([LockboxKey,EpicLockboxKey])) {
 			var item:InventoryItem = possibleItems[0];
 			OpenType = string(item.m_ACGItem.m_TemplateID0);
 		}
@@ -226,7 +236,7 @@ class com.fox.DropResearch.Cache extends BaseClass {
 	}
 	
 	private function SlotOpenedLootBox(obtainedItems:Array, lootResult:Number, moreAvailable:Boolean) {
-		if (OpenType && obtainedItems.length>0) {
+		if (OpenType && obtainedItems.length > 0 && _root.lootbox.m_Window.m_Content.m_TokenType == LockboxKey) {
 			PrintDebug("Opening: " + OpenType, true);
 			if (!SpecialEvent) {
 				switch (OpenType) {
@@ -290,7 +300,7 @@ class com.fox.DropResearch.Cache extends BaseClass {
 				// format is ItemID:SignetID or ItemID or ItemName
 				if (OpenType != "Scenario" && OpenType != "Dungeon" && OpenType != "Lair") {
 					var weapon = isWeapon(item);
-					PrintDebug("Is weapon : " + item.m_Name + " " +weapon,true);
+					//PrintDebug("Is weapon : " + item.m_Name + " " +weapon,true);
 					// Obtained items doesn't contain the weapon "signet", attempt to find it in inventory
 					// If it fails to retrieve suffix it will check the item position again after 500ms.
 					if (weapon)	item = FindInventoryItem(item);
