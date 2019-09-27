@@ -16,7 +16,8 @@ class com.fox.DropResearch.Consumable extends BaseClass {
 
 	public function Consumable() {
 		//glyph reward bag, all zones seem to have same glyph bags
-		WatchedConsumables["9284361"] = ["item"];
+		// Enough data already WatchedConsumables["9284361"] = ["item"];
+		
 		//Ext.ord.Talisman bag (Tribal)
 		WatchedConsumables["9418597"] = ["item"];
 		//Agent Vanity Reward bag(blue)
