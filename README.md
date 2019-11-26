@@ -28,14 +28,7 @@ Collected data will get sent to http://secretfox.pythonanywhere.com/ when bank, 
 Alternatively you can force synchronization with `/Option DropResearch_ForceSync true` chat command.  
 Once upload has been completed all locally stored data will be wiped.
 
-To view your data on in-game browser you can use `/Option DropResearch_ShowData true` chat command. 
-You can copy and share the browser address to share your data with others.  
-
-**Privacy**  
-Theoretically anyone could access your collected data if they knew your characterID, however finding it would require some modding experience, as it is not visibly listed anywhere on the main site or game. I'll see if i can add some privacy settings in the future though.
-
 **Chat commands**  
-    `/option DropResearch_ShowData` Displays your collected data  
     `/option DropResearch_Debug` Enables Debug mode  
     `/option DropResearch_ForceSync` Forces data upload  
     `/option DropResearch_PlayerID` Prints out playerID (v.0.4.0 and up)  
@@ -44,7 +37,6 @@ Theoretically anyone could access your collected data if they knew your characte
 **Shortening chat commands**  
 The Chat commands are bit long, but there is a way to shorten them through "alias", here are some examples.  
 `/alias sync option DropResearch_ForceSync true` allows you to upload your data with `/sync`  
-`/alias dropdata option DropResearch_ShowData true` allows you to view your own statistics with `/dropdata`  
 Aliases are account wide,and you only need to create them once.
 
 **Known Issues**
